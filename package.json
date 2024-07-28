@@ -5,6 +5,7 @@
   "version": "1.0.4",
   "description": "A CLI to generate TypeScript types from an OpenAPI specification",
   "main": "src/index.js",
+  "type": "module",
   "bin": {
     "@svene/openapi-ts-cli": "src/cli.js"
   },
