@@ -10,6 +10,8 @@ import path from 'path';
 import winston from 'winston';
 import { z } from 'zod';
 
+// TODO: Generate type.util.ts automatically for easy access
+
 const configSchema = z.object({
   PORT: z.number().int().positive(),
   NODE_ENV: z.enum(['development', 'production', 'test']),
