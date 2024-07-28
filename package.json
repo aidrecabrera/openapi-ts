@@ -1,0 +1,48 @@
+{
+  "name": "openapi-ts",
+  "version": "1.0.0",
+  "description": "A package to generate TypeScript types from an OpenAPI specification",
+  "main": "dist/index.js",
+  "bin": {
+    "openapi-ts": "dist/cli.js"
+  },
+  "scripts": {
+    "start": "node dist/index.js",
+    "build": "tsc",
+    "dev": "ts-node-dev --respawn --transpile-only src/index.ts",
+    "lint": "eslint . --ext .ts",
+    "format": "prettier --write ."
+  },
+  "keywords": [
+    "openapi",
+    "typescript",
+    "types",
+    "generator"
+  ],
+  "author": "Aidre Cabrera",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/aidrecabrera/openapi-ts"
+  },
+  "dependencies": {
+    "axios": "^1.7.2",
+    "dotenv": "^16.0.3",
+    "express": "^4.17.1",
+    "inquirer": "^9.0.0",
+    "openapi-typescript": "^4.0.0",
+    "winston": "^3.8.2",
+    "zod": "^3.23.8"
+  },
+  "devDependencies": {
+    "@types/express": "^4.17.21",
+    "@types/inquirer": "^9.0.7",
+    "@types/node": "^18.15.0",
+    "@typescript-eslint/eslint-plugin": "^5.54.1",
+    "@typescript-eslint/parser": "^5.54.1",
+    "eslint": "^8.36.0",
+    "eslint-config-prettier": "^8.7.0",
+    "prettier": "^2.8.4",
+    "typescript": "^4.0.0"
+  }
+}
