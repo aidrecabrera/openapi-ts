@@ -1,10 +1,12 @@
 {
-  "name": "openapi-ts",
+  "name": "@svene/openapi-ts-cli",
+  "private": false,
+  "publisher": "svene",
   "version": "1.0.0",
-  "description": "A package to generate TypeScript types from an OpenAPI specification",
+  "description": "A cli to generate TypeScript types from an OpenAPI specification",
   "main": "dist/index.js",
   "bin": {
-    "openapi-ts": "dist/cli.js"
+    "@svene/openapi-ts-cli": "dist/cli.js"
   },
   "scripts": {
     "start": "node dist/index.js",
