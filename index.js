@@ -33,6 +33,10 @@ let configData;
 
 const commands = process.argv.slice(2);
 
+/**
+ * Initializes the configuration file with user inputs.
+ * Prompts the user for necessary configuration values and writes them to a file.
+ */
 async function initConfig() {
   const port = await inquirer.prompt({
     type: 'input',
@@ -137,6 +141,7 @@ if (commands[0] === 'init') {
   process.exit(0);
 }
 
+// Check if configuration file exists, else prompt user to run 'init'
 if (
   await fs
     .stat(configFilePath)
@@ -157,8 +162,10 @@ if (
   process.exit(1);
 }
 
+// Validate and parse configuration data using Zod
 const config = configSchema.parse(configData);
 
+// Initialize logger using Winston with specified log level and format
 const logger = winston.createLogger({
   level: config.LOG_LEVEL,
   format: winston.format.combine(
@@ -173,6 +180,11 @@ const logger = winston.createLogger({
 
 const apiJsonPath = path.resolve(process.cwd(), 'api.json');
 
+/**
+ * Fetches the OpenAPI specification from the specified URL.
+ * @returns {Promise<Object>} The OpenAPI specification as a JSON object.
+ * @throws Will throw an error if the OpenAPI specification cannot be fetched.
+ */
 async function fetchOpenApiSpec() {
   try {
     const response = await axios.get(config.OPENAPI_SPEC_URL);
@@ -194,6 +206,12 @@ async function fetchOpenApiSpec() {
   }
 }
 
+/**
+ * Generates TypeScript types from the given OpenAPI specification.
+ * @param {Object} openApiSpec The OpenAPI specification as a JSON object.
+ * @returns {Promise<void>} A promise that resolves when the types have been generated.
+ * @throws Will throw an error if the types cannot be generated.
+ */
 async function generateTypes(openApiSpec) {
   try {
     const openApiSpecJson = JSON.stringify(openApiSpec, null, 2);
@@ -225,6 +243,7 @@ async function generateTypes(openApiSpec) {
   }
 }
 
+// Serve the generated TypeScript types
 const app = express();
 
 app.get('/types', (req, res) => {
@@ -236,6 +255,10 @@ app.get('/types', (req, res) => {
   });
 });
 
+/**
+ * Updates the TypeScript types by fetching the latest OpenAPI specification and regenerating the types.
+ * @returns {Promise<void>} A promise that resolves when the types have been updated.
+ */
 async function updateTypes() {
   try {
     const spec = await fetchOpenApiSpec();
@@ -246,6 +269,11 @@ async function updateTypes() {
   }
 }
 
+/**
+ * Starts the Express server on the specified port.
+ * @param {number} port The port number to start the server on.
+ * @returns {Promise<http.Server>} A promise that resolves with the server instance.
+ */
 async function startServer(port) {
   return new Promise((resolve, reject) => {
     const server = createServer(app);
@@ -271,9 +299,20 @@ async function startServer(port) {
   });
 }
 
+/**
+ * Main function to initialize and start the server, handle updates, and setup watchers.
+ * Handles various signals and exceptions for graceful shutdown and error handling.
+ */
 async function main() {
   if (commands[0] === 'init') {
     await initConfig();
+  } else if (commands[0] === 'generate') {
+    try {
+      await updateTypes();
+    } catch (error) {
+      logger.error('Error generating types:', error);
+      process.exit(1);
+    }
   } else {
     try {
       const server = await startServer(config.PORT);
@@ -283,7 +322,10 @@ async function main() {
         setInterval(updateTypes, config.UPDATE_INTERVAL);
       } else {
         const watchDir = config.WATCH_DIR || '.';
-        const watcher = watch(watchDir, { persistent: true });
+        const watcher = watch(watchDir, {
+          ignored: /(^|[\/\\])\../,
+          persistent: true,
+        });
 
         watcher.on('change', (path) => {
           logger.info(`File ${path} changed, updating types...`);
