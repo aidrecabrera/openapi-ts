@@ -1,8 +1,10 @@
 #!/usr/bin/env node
 import axios from 'axios';
 import { exec } from 'child_process';
+import { watch } from 'chokidar';
 import express from 'express';
 import { promises as fs } from 'fs';
+import { createServer } from 'http';
 import inquirer from 'inquirer';
 import path from 'path';
 import winston from 'winston';
@@ -22,6 +24,8 @@ const configSchema = z.object({
   ]),
   OPENAPI_SPEC_URL: z.string().url(),
   OUTPUT_FILE_PATH: z.string(),
+  UPDATE_INTERVAL: z.number().int().positive().optional(),
+  WATCH_DIR: z.string().optional(),
 });
 
 const configFilePath = 'ts-openapi.config.json';
@@ -95,12 +99,33 @@ async function initConfig() {
     },
   });
 
+  const updateInterval = await inquirer.prompt({
+    type: 'input',
+    name: 'updateInterval',
+    message: 'Enter the interval for updating types (in milliseconds):',
+    default: '3600000',
+    validate: (val) => {
+      return Number.isInteger(Number(val)) && Number(val) > 0
+        ? true
+        : 'Please enter a valid positive integer.';
+    },
+  });
+
+  const watchDir = await inquirer.prompt({
+    type: 'input',
+    name: 'watchDir',
+    message: 'Enter the directory to watch for changes (optional):',
+    default: '.',
+  });
+
   const configJson = {
     PORT: port.port,
     NODE_ENV: nodeEnv.nodeEnv,
     LOG_LEVEL: logLevel.logLevel,
     OPENAPI_SPEC_URL: openapiSpecUrl.openapiSpecUrl,
     OUTPUT_FILE_PATH: outputFilePath.outputFilePath,
+    UPDATE_INTERVAL: Number(updateInterval.updateInterval),
+    WATCH_DIR: watchDir.watchDir,
   };
 
   await fs.writeFile(configFilePath, JSON.stringify(configJson, null, 2));
@@ -221,47 +246,77 @@ async function updateTypes() {
   }
 }
 
-const server = app.listen(config.PORT, () => {
-  logger.info(
-    `TypeScript types server running at http://localhost:${config.PORT} in ${config.NODE_ENV} mode`,
-  );
+async function startServer(port) {
+  return new Promise((resolve, reject) => {
+    const server = createServer(app);
 
-  updateTypes();
-});
-
-function gracefulShutdown(signal) {
-  return () => {
-    logger.info(`Received ${signal} signal, shutting down...`);
-    server.close(() => {
-      logger.info('Server closed');
-      process.exit(0);
-    });
-  };
+    server
+      .listen(port)
+      .on('listening', () => {
+        logger.info(
+          `TypeScript types server running at http://localhost:${port} in ${config.NODE_ENV} mode`,
+        );
+        resolve(server);
+      })
+      .on('error', (err) => {
+        if (err.code === 'EADDRINUSE') {
+          logger.warn(`Port ${port} is in use, trying another port...`);
+          startServer(port + 1)
+            .then(resolve)
+            .catch(reject);
+        } else {
+          reject(err);
+        }
+      });
+  });
 }
-
-process.on('SIGINT', gracefulShutdown('SIGINT'));
-process.on('SIGTERM', gracefulShutdown('SIGTERM'));
-
-process.on('unhandledRejection', (reason, promise) => {
-  logger.error('Unhandled Rejection at:', promise, 'reason:', reason);
-});
-
-process.on('uncaughtException', (error) => {
-  logger.error('Uncaught Exception:', error);
-});
-
-setInterval(updateTypes, 60 * 60 * 1000);
 
 async function main() {
   if (commands[0] === 'init') {
     await initConfig();
   } else {
     try {
-      const spec = await fetchOpenApiSpec();
-      await generateTypes(spec);
-      logger.info('Types generated successfully');
+      const server = await startServer(config.PORT);
+      await updateTypes();
+
+      if (config.UPDATE_INTERVAL) {
+        setInterval(updateTypes, config.UPDATE_INTERVAL);
+      } else {
+        const watchDir = config.WATCH_DIR || '.';
+        const watcher = watch(watchDir, { persistent: true });
+
+        watcher.on('change', (path) => {
+          logger.info(`File ${path} changed, updating types...`);
+          updateTypes();
+        });
+      }
+
+      process.on('SIGINT', () => {
+        logger.info('Received SIGINT signal, shutting down...');
+        server.close(() => {
+          logger.info('Server closed');
+          process.exit(0);
+        });
+      });
+
+      process.on('SIGTERM', () => {
+        logger.info('Received SIGTERM signal, shutting down...');
+        server.close(() => {
+          logger.info('Server closed');
+          process.exit(0);
+        });
+      });
+
+      process.on('unhandledRejection', (reason, promise) => {
+        logger.error('Unhandled Rejection at:', promise, 'reason:', reason);
+      });
+
+      process.on('uncaughtException', (error) => {
+        logger.error('Uncaught Exception:', error);
+      });
     } catch (error) {
-      logger.error('Error generating types:', error);
+      logger.error('Error starting server:', error);
+      process.exit(1);
     }
   }
 }
