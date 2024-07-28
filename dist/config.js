@@ -55,12 +55,19 @@ function validateConfig(config) {
     }
 }
 let configData;
-try {
-    const configFile = fs.readFileSync('ts-openapi.config.json', 'utf-8');
-    configData = JSON.parse(configFile);
+const configFilePath = 'ts-openapi.config.json';
+if (fs.existsSync(configFilePath)) {
+    try {
+        const configFile = fs.readFileSync(configFilePath, 'utf-8');
+        configData = JSON.parse(configFile);
+    }
+    catch (error) {
+        console.error('Error reading configuration file:', error);
+        process.exit(1);
+    }
 }
-catch (error) {
-    console.error('Error reading configuration file:', error);
+else {
+    console.warn(`Configuration file ${configFilePath} not found. Please run 'init' command to create it.`);
     process.exit(1);
 }
 const config = validateConfig(configData);
