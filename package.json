@@ -4,14 +4,14 @@
   "publisher": "svene",
   "version": "1.0.5",
   "description": "A CLI to generate TypeScript types from an OpenAPI specification",
-  "main": "src/index.js",
+  "main": "index.js",
   "type": "module",
   "bin": {
-    "@svene/openapi-ts-cli": "src/cli.js"
+    "@svene/openapi-ts-cli": "index.js"
   },
   "scripts": {
-    "start": "node src/index.js",
-    "dev": "nodemon src/index.js",
+    "start": "node index.js",
+    "dev": "nodemon index.js",
     "lint": "eslint . --ext .js",
     "format": "prettier --write ."
   },
