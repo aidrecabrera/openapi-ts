@@ -1,15 +1,15 @@
-import axios from 'axios';
-import { exec } from 'child_process';
-import { promises as fs } from 'fs';
-import * as path from 'path';
-import config from './config';
-import logger from './logger';
+const axios = require('axios');
+const { exec } = require('child_process');
+const { promises: fs } = require('fs');
+const path = require('path');
+const config = require('./config');
+const logger = require('./logger');
 
 const apiJsonPath = path.resolve(__dirname, '../api.json');
 
-export async function fetchOpenApiSpec(): Promise<object> {
+async function fetchOpenApiSpec() {
   try {
-    const response = await axios.get<object>(config.OPENAPI_SPEC_URL);
+    const response = await axios.get(config.OPENAPI_SPEC_URL);
     return response.data;
   } catch (error) {
     if (axios.isAxiosError(error)) {
@@ -28,12 +28,12 @@ export async function fetchOpenApiSpec(): Promise<object> {
   }
 }
 
-export async function generateTypes(openApiSpec: object): Promise<void> {
+async function generateTypes(openApiSpec) {
   try {
     const openApiSpecJson = JSON.stringify(openApiSpec, null, 2);
     await fs.writeFile(apiJsonPath, openApiSpecJson);
 
-    await new Promise<void>((resolve, reject) => {
+    await new Promise((resolve, reject) => {
       exec(
         `npx openapi-typescript ${apiJsonPath} --output ${config.OUTPUT_FILE_PATH}`,
         (error, stdout, stderr) => {
@@ -59,4 +59,8 @@ export async function generateTypes(openApiSpec: object): Promise<void> {
   }
 }
 
-export { apiJsonPath };
+module.exports = {
+  fetchOpenApiSpec,
+  generateTypes,
+  apiJsonPath,
+};

@@ -1,12 +1,14 @@
 #!/usr/bin/env node
-import * as fs from 'fs';
-import inquirer from 'inquirer';
-import { fetchOpenApiSpec, generateTypes } from './generateTypes';
-import logger from './logger';
+
+const fs = require('fs');
+const { fetchOpenApiSpec, generateTypes } = require('./generateTypes');
+const logger = require('./logger');
 
 const commands = process.argv.slice(2);
 
 async function initConfig() {
+  const inquirer = require('inquirer');
+
   const port = await inquirer.prompt({
     type: 'input',
     name: 'port',
@@ -16,6 +18,7 @@ async function initConfig() {
       return Number(port);
     },
   });
+
   const nodeEnv = await inquirer.prompt({
     type: 'list',
     name: 'nodeEnv',
@@ -28,6 +31,7 @@ async function initConfig() {
     default: 'development',
     filter: (val) => val.toLowerCase(),
   });
+
   const logLevel = await inquirer.prompt({
     type: 'list',
     name: 'logLevel',
@@ -44,6 +48,7 @@ async function initConfig() {
     default: 'info',
     filter: (val) => val.toLowerCase(),
   });
+
   const openapiSpecUrl = await inquirer.prompt({
     type: 'input',
     name: 'openapiSpecUrl',
@@ -58,6 +63,7 @@ async function initConfig() {
       }
     },
   });
+
   const outputFilePath = await inquirer.prompt({
     type: 'input',
     name: 'outputFilePath',

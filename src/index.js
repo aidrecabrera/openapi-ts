@@ -1,7 +1,7 @@
-import express from 'express';
-import config from './config';
-import { fetchOpenApiSpec, generateTypes } from './generateTypes';
-import logger from './logger';
+const express = require('express');
+const config = require('./config');
+const { fetchOpenApiSpec, generateTypes } = require('./generateTypes');
+const logger = require('./logger');
 
 const app = express();
 
@@ -14,7 +14,7 @@ app.get('/types', (req, res) => {
   });
 });
 
-async function updateTypes(): Promise<void> {
+async function updateTypes() {
   try {
     const spec = await fetchOpenApiSpec();
     await generateTypes(spec);
@@ -32,7 +32,7 @@ const server = app.listen(config.PORT, () => {
   updateTypes();
 });
 
-function gracefulShutdown(signal: string) {
+function gracefulShutdown(signal) {
   return () => {
     logger.info(`Received ${signal} signal, shutting down...`);
     server.close(() => {

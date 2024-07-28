@@ -1,5 +1,5 @@
-import * as fs from 'fs';
-import { z } from 'zod';
+const fs = require('fs');
+const { z } = require('zod');
 
 const ConfigSchema = z.object({
   PORT: z.number().int().positive(),
@@ -17,9 +17,7 @@ const ConfigSchema = z.object({
   OUTPUT_FILE_PATH: z.string(),
 });
 
-export type Config = z.infer<typeof ConfigSchema>;
-
-function validateConfig(config: Record<string, unknown>): Config {
+function validateConfig(config) {
   try {
     return ConfigSchema.parse(config);
   } catch (error) {
@@ -50,6 +48,6 @@ if (fs.existsSync(configFilePath)) {
   process.exit(1);
 }
 
-const config: Config = validateConfig(configData);
+const config = validateConfig(configData);
 
-export default config;
+module.exports = config;
